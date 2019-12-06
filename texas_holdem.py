@@ -155,11 +155,11 @@ class Player:
                 amount = input(f'Please enter the amount of points to raise: ')
                 try:
                     int_amount = int(amount)
+                    outputs = self.raising(current_round_commited, int_amount)
+                    if isinstance(outputs, list):
+                        exist_error = False
                 except():
-                    print('***** WARNING: Entered number is invalid. *****')
-                outputs = self.raising(current_round_commited, int_amount)
-                if isinstance(outputs, list):
-                    exist_error = False
+                    print('***** WARNING: Entered points to raise is invalid. *****')
             elif move == 'all-in':
                 outputs = self.all_in()
                 if isinstance(outputs, list):
@@ -418,7 +418,9 @@ class GameEnv:
         self.deck.shuffle()
         self.board = []
 
-    def start_game(self):  # apply blinds and each player draws two cards
+    def start_game(self, initial_points=1000):  # distribute initial points apply blinds and each player draws two cards
+        for player in self.players_list:
+            player.points = initial_points
         self.reset()
         self.apply_blinds()
         self.initialize_player_cards()
@@ -428,6 +430,7 @@ class GameEnv:
             player.round_requirement_met = False
 
     def round_0_play(self):  # need to chekc number of players still in tournament
+        print(f'----- ----- Round 0 Starts ----- -----')
         self.start_round()
         iteration = 2  # skipping small and big blind
         round_continues = True
@@ -460,8 +463,10 @@ class GameEnv:
                         round_requirement.append(player.round_requirement_met)
                 if all(item is True for item in round_requirement):  # check to end current round
                     round_continues = False
+        print(f'----- ----- Round 0 Starts ----- -----')
 
-    def round_1_play(self):  # need to check for number of players still in game
+    def round_1_play(self):
+        print(f'----- ----- Round 1 Starts ----- -----')
         self.start_round()
         for i in range(3):  # add 3 cards to the board
             self.board.append(self.deck.draw_card())
@@ -496,8 +501,10 @@ class GameEnv:
                         round_requirement.append(player.round_requirement_met)
                 if all(item is True for item in round_requirement):  # check to end current round
                     round_continues = False
+        print(f'----- ----- Round 1 Ends ----- -----')
 
-    def round_2_play(self):  # need to check for number of players still in game
+    def round_2_play(self):
+        print(f'----- ----- Round 2 Starts ----- -----')
         self.start_round()
         self.board.append(self.deck.draw_card())  # add a card to the board
         iteration = 0  # start at small blind
@@ -532,8 +539,10 @@ class GameEnv:
                         round_requirement.append(player.round_requirement_met)
                 if all(item is True for item in round_requirement):  # check to end current round
                     round_continues = False
+        print(f'----- ----- Round 2 Ends ----- -----')
 
-    def round_3_play(self):  # need to check for number of players still in game
+    def round_3_play(self):
+        print(f'----- ----- Round 3 Starts ----- -----')
         self.start_round()
         self.board.append(self.deck.draw_card())  # add a card to the board
         iteration = 0  # start at small blind
