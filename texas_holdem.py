@@ -1,9 +1,11 @@
 # %% import library
+import ast
 import random
 from collections import defaultdict
 from itertools import combinations
 import operator
 import numpy as np
+from math import floor
 
 
 # %% single card class definition
@@ -60,17 +62,23 @@ class Player:
     A single player in the game.
     """
 
-    def __init__(self, name, hand=None, points=0):
+    def __init__(self, name, conn, hand=None, points=0):
         if hand is None:
             self.hand = []
         else:
             self.hand = hand
         self.name = name
+        self.conn = conn
         self.points = points
         self.self_past_rounds_commited = 0
         self.self_current_round_commited = 0
         self.in_game = True
         self.round_requirement_met = False
+        self.exist_error = True
+
+        self.all_available_cards = None
+        self.best_hand_rating = None
+        self.game_end_return = 0
 
     def dealed_card(self, card):
         if len(self.hand) < 2:
@@ -85,24 +93,34 @@ class Player:
         print(f'You have folded.')
         self.round_requirement_met = True
         self.in_game = False
-        return ['fold', self.get_info()]
+        return {'MOVE': 'fold', 'PLAYER_INFO': self.get_info()}
 
     def checking(self, current_round_commited):
         if self.self_current_round_commited == current_round_commited:
             print(f'You want to check.')
             self.round_requirement_met = True
-            return ['check', self.get_info()]
+            return {'MOVE': 'check',
+                    'POINTS': self.points,
+                    'PAST_COMMITED': self.self_past_rounds_commited,
+                    'CURRENT_COMMITED': self.self_current_round_commited,
+                    'IN_GAME': self.in_game,
+                    'BET_MATCH': self.round_requirement_met}
         else:
             print('***** WARNING: You need to match the bet. *****')
             return False
 
     def calling(self, current_round_commited):
         if self.points >= current_round_commited - self.self_current_round_commited:
-            print(f'You called {current_round_commited - self.self_current_round_commited} points')
+            print(f'You called {current_round_commited - self.self_current_round_commited} points.')
             self.self_current_round_commited = current_round_commited - self.self_current_round_commited
             self.points -= (current_round_commited - self.self_current_round_commited)
             self.round_requirement_met = True
-            return ['call', self.get_info()]
+            return {'MOVE': 'call',
+                    'POINTS': self.points,
+                    'PAST_COMMITED': self.self_past_rounds_commited,
+                    'CURRENT_COMMITED': self.self_current_round_commited,
+                    'IN_GAME': self.in_game,
+                    'BET_MATCH': self.round_requirement_met}
         else:
             print('***** WARNING: You do not have enough points to call. *****')
             return False
@@ -110,10 +128,16 @@ class Player:
     def raising(self, current_round_commited, raise_amount):
         if current_round_commited - self.self_current_round_commited + raise_amount <= self.points:
             self.self_current_round_commited = current_round_commited + raise_amount
-            self.points -= (current_round_commited - self.self_current_round_commited) - raise_amount
-            print(f'You raised {raise_amount} points in addition to the previous bet {current_round_commited} points')
+            self.points -= (current_round_commited - self.self_current_round_commited) + raise_amount
+            print(f'You raised {raise_amount} points in addition to the previous bet of {current_round_commited} points.')
             self.round_requirement_met = True
-            return ['raising', raise_amount, self.get_info()]
+            return {'MOVE': 'raising',
+                    'RAISE_AMOUNT': raise_amount,
+                    'POINTS': self.points,
+                    'PAST_COMMITED': self.self_past_rounds_commited,
+                    'CURRENT_COMMITED': self.self_current_round_commited,
+                    'IN_GAME': self.in_game,
+                    'BET_MATCH': self.round_requirement_met}
         else:
             print(f'***** WARNING: You do not have enough to raise {raise_amount} points. *****')
             print(f'A maximum of {self.points + self.self_current_round_commited - current_round_commited} points available for raise.')
@@ -125,49 +149,59 @@ class Player:
             self.points = 0
             self.round_requirement_met = True
             print('You have decided to all-in.')
-            return ['all-in', self.get_info()]
+            return {'MOVE': 'all_in',
+                    'POINTS': self.points,
+                    'PAST_COMMITED': self.self_past_rounds_commited,
+                    'CURRENT_COMMITED': self.self_current_round_commited,
+                    'IN_GAME': self.in_game,
+                    'BET_MATCH': self.round_requirement_met}
         else:
             print(f'***** WARNING: You already bet all your points. *****')
             return False
 
     def ask_for_move(self, current_round_commited):
-        print(f'----- ----- ----- ----- ----- ----- Player Move ----- ----- ----- ----- ----- -----')
         print(f'You have commited {self.self_past_rounds_commited + self.self_current_round_commited} points this game.')
         if current_round_commited == self.self_current_round_commited:
             print(f'You have match the bet this round.')
         else:
             print(f'You need to commit additional {current_round_commited - self.self_current_round_commited} points.')
-        exist_error = True
-        while exist_error:
-            move = input(f'Please select a move: (fold, check, call, raise, all-in)')
+        self.exist_error = True
+        while self.exist_error:
+            move = input(f'Please select a move: (fold, check, call, raising, all_in)')
             if move == 'fold':
                 outputs = self.folding()
-                exist_error = False
+                self.exist_error = False
             elif move == 'check':
                 outputs = self.checking(current_round_commited)
-                if isinstance(outputs, list):
-                    exist_error = False
+                if isinstance(outputs, dict):
+                    self.exist_error = False
             elif move == 'call':
                 outputs = self.calling(current_round_commited)
-                if isinstance(outputs, list):
-                    exist_error = False
-            elif move == 'raise':
+                if isinstance(outputs, dict):
+                    self.exist_error = False
+            elif move == 'raising':
                 amount = input(f'Please enter the amount of points to raise: ')
                 try:
                     int_amount = int(amount)
                     outputs = self.raising(current_round_commited, int_amount)
-                    if isinstance(outputs, list):
-                        exist_error = False
+                    if isinstance(outputs, dict):
+                        self.exist_error = False
                 except():
                     print('***** WARNING: Entered points to raise is invalid. *****')
-            elif move == 'all-in':
+                    print('\n')
+            elif move == 'all_in':
                 outputs = self.all_in()
-                if isinstance(outputs, list):
-                    exist_error = False
+                if isinstance(outputs, dict):
+                    self.exist_error = False
+            if not self.exist_error:
+                return outputs
 
     def get_info(self):
-        return [self.points, self.self_past_rounds_commited, self.self_current_round_commited,
-                self.in_game, self.round_requirement_met]
+        return {'POINTS': self.points,
+                'PAST_COMMITED': self.self_past_rounds_commited,
+                'CURRENT_COMMITED': self.self_current_round_commited,
+                'IN_GAME': self.in_game,
+                'BET_MATCH': self.round_requirement_met}
 
 
 # %% comparator class definition
@@ -181,6 +215,8 @@ class Comparator:
                             '10': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14}
         self._hand_dict = {9: "straight flush", 8: "four of a kind", 7: "full house", 6: "flush", 5: "straight",
                            4: "three of a kind", 3: "two pairs", 2: "one pair", 1: "high card"}
+    def num2hand(self, rating):
+        return self._hand_dict[rating]
 
     def check_one_pair(self, hand):
         values = [i[:-1] for i in hand]
@@ -394,215 +430,350 @@ class GameEnv:
         self.deck = None
         self.board = None
 
-    def initialize_player_cards(self):
-        for player in self.players_list:
-            player.dealed_card(self.deck.draw_card())  # player draws 2 cards
-            player.dealed_card(self.deck.draw_card())
+    @staticmethod
+    def communication(conn, cmd):
+        conn.send(str.encode(cmd))  # sending command to player client
+        print(f'Sent command: {cmd}')
+        player_response = str(conn.recv(20480), "utf-8")  # receiving message from player client
+        print(f'Received message: {player_response}')
+        return player_response
 
-            outputs = [player.hand]
-            print(outputs)
-            ##### should add output to player client "player"
+    def initialize_player_cards(self):
+        outputs = {}
+        for player in self.players_list:
+            print(f'----- Initialize hands for player {player.name} -----')
+            player.dealed_card(self.deck.draw_card())  # player draws a card
+            outputs['first_card'] = str(player.hand[0])
+            player.dealed_card(self.deck.draw_card())  # player draws another card
+            outputs['second_card'] = str(player.hand[1])
+
+            if self.communication(player.conn, 'sending_initial_hand') == 'acknowledged_initial_hand':
+                player.conn.send(str.encode(str(outputs)))
 
     def apply_blinds(self):
+        print(f'----- apply blinds for players -----')
         self.players_list[0].points -= self.small_blind_points  # small blind player
         self.players_list[0].self_current_round_commited = self.small_blind_points
+        if self.communication(self.players_list[0].conn, 'sending_small_blind') == 'acknowledged_small_blind':
+            self.players_list[0].conn.send(str.encode(str(self.small_blind_points)))
         self.players_list[1].points -= self.big_blind_points  # big blind player
         self.players_list[1].self_current_round_commited = self.big_blind_points
+        if self.communication(self.players_list[1].conn, 'sending_big_blind') == 'acknowledged_big_blind':
+            self.players_list[1].conn.send(str.encode(str(self.big_blind_points)))
+
+    def initial_points(self, initial_points=1000):
+        for player in self.players_list:
+            print(f'----- ----- Initialize points for player {player.name} ----- -----')
+            if self.communication(player.conn, 'sending_initial_points') == 'acknowledged_initial_points':
+                player.conn.send(str.encode(str(initial_points)))
+                player.points = initial_points
 
     def reset(self):
+        print(self.players_list)
         for player in self.players_list:
             player.hand = []
             player.round_requirement_met = False
             player.in_game = True
+            player.all_available_cards = None
+            player.best_hand_rating = None
+            player.game_end_return = 0
+            self.communication(player.conn, 'game_start_reset')
         self.deck = Deck(1)
         self.deck.shuffle()
         self.board = []
 
-    def start_game(self, initial_points=1000):  # distribute initial points apply blinds and each player draws two cards
-        for player in self.players_list:
-            player.points = initial_points
+    def game_start_setup(self):  # distribute initial points apply blinds and each player draws two cards
+        print(f'----- ----- ----- ----- ----- ----- ----- ---- ----- ----- ----- ----- ----- -----')
+        print(f'----- ----- ----- ----- ----- ----- Game Start ----- ----- ----- ----- ----- -----')
+        print(f'----- ----- ----- ----- ----- ----- ----- ---- ----- ----- ----- ----- ----- -----')
         self.reset()
         self.apply_blinds()
         self.initialize_player_cards()
 
-    def start_round(self):  # set all players' round reqirement to not met
+    def round_start_setup(self):  # set all players' round reqirement to not met
         for player in self.players_list:
             player.round_requirement_met = False
 
-    def round_0_play(self):  # need to chekc number of players still in tournament
-        print(f'----- ----- Round 0 Starts ----- -----')
-        self.start_round()
+    def round_0_play(self):  # need to check number of players still in tournament
+        print(f'----- ----- ----- ----- Round 0 Starts ----- ----- ----- -----')
+        self.round_start_setup()
         iteration = 2  # skipping small and big blind
         round_continues = True
         current_round_commited = 2
         while round_continues:
-            round_requirement = []
-            player_index = self.n_player % iteration
-            if player.points > 0 and player.in_game:  # check if player has all-in or folded
-                outputs = [self.players_list[player_index].hand, self.board, current_round_commited]
-                ##### add output to player client "self.players_list[player_index]" and ask for move
-                print(outputs)
+            round_requirement = [True]
+            player_index = iteration % self.n_player
+            if self.players_list[player_index].points > 0 and self.players_list[player_index].in_game:  # check if player has all-in or folded
+                print(f'----- Player {self.players_list[player_index].name} move -----')
 
-                inputs = list(['raise', 100, [1000, 150, 300, True, True]])
-                ##### add input from player client "self.players_list[player_index]"
-                print(inputs)
+                outputs = {'HAND': str(self.players_list[player_index].hand),
+                           'BOARD': str(self.board),
+                           'CURRENT_BET': str(current_round_commited)}
+                if self.communication(self.players_list[player_index].conn, 'request_round_0_move') == 'acknowledged_request':
+                    self.players_list[player_index].conn.send(str.encode(str(outputs)))
 
-                player.points = inputs[2][0]
-                player.self_past_rounds_commited = inputs[2][1]
-                player.self_current_round_commited = inputs[2][2]
-                player.in_game = inputs[2][3]
-                player.round_requirement_met = inputs[2][4]
+                player_info = str(self.players_list[player_index].conn.recv(20480), "utf-8")
+                player_info = ast.literal_eval(player_info)
+                print(f'Received player info: {player_info}')
 
-                if inputs[2][2] > current_round_commited:
-                    current_round_commited = inputs[2][2]
-
+                self.players_list[player_index].points = player_info['POINTS']
+                self.players_list[player_index].self_past_rounds_commited = player_info['PAST_COMMITED']
+                self.players_list[player_index].self_current_round_commited = player_info['CURRENT_COMMITED']
+                self.players_list[player_index].in_game = player_info['IN_GAME']
+                self.players_list[player_index].round_requirement_met = player_info['BET_MATCH']
+                if player_info['CURRENT_COMMITED'] > current_round_commited:
+                    current_round_commited = player_info['CURRENT_COMMITED']
                 iteration += 1
-
-                for player in self.players_list:  # append current round
-                    if player.points > 0:
-                        round_requirement.append(player.round_requirement_met)
-                if all(item is True for item in round_requirement):  # check to end current round
-                    round_continues = False
-        print(f'----- ----- Round 0 Starts ----- -----')
+                if player_info['MOVE'] != 'raising':
+                    for player in self.players_list:  # append current round
+                        if player.points >= 0 and player.in_game:
+                            round_requirement.append(player.round_requirement_met)
+                    if all(item is True for item in round_requirement):  # check to end current round
+                        round_continues = False
+                if round_continues is False:
+                    print(f'----- ----- ----- Round End Update ----- ----- -----')
+                    for player in self.players_list:
+                        player.self_past_rounds_commited += player.self_current_round_commited
+                        player.self_current_round_commited = 0
+                        self.communication(self.players_list[player_index].conn, 'round_end_update')
+        print(f'----- ----- ----- ----- Round 0 Ends ----- ----- ----- -----')
 
     def round_1_play(self):
-        print(f'----- ----- Round 1 Starts ----- -----')
-        self.start_round()
+        print(f'----- ----- ----- ----- Round 1 Starts ----- ----- ----- -----')
+        self.round_start_setup()
         for i in range(3):  # add 3 cards to the board
             self.board.append(self.deck.draw_card())
         iteration = 0  # start at small blind
         round_continues = True
         current_round_commited = 0
         while round_continues:
-            round_requirement = []
-            player_index = self.n_player % iteration
-            if player.points > 0 and player.in_game:  # check if player has all-in or folded
-                outputs = [self.players_list[player_index].hand, self.board, current_round_commited]
-                ##### add output to player client "self.players_list[player_index]" and ask for move
-                print(outputs)
+            round_requirement = [True]
+            player_index = iteration % self.n_player
+            if self.players_list[player_index].points > 0 and self.players_list[player_index].in_game:  # check if player has all-in or folded
+                print(f'----- Player {self.players_list[player_index].name} move -----')
 
-                inputs = list(['raise', 100, [1000, 150, 300, True, True]])
-                ##### add input from player client "self.players_list[player_index]"
-                print(inputs)
+                outputs = {'HAND': str(self.players_list[player_index].hand),
+                           'BOARD': str(self.board),
+                           'CURRENT_BET': str(current_round_commited)}
+                if self.communication(self.players_list[player_index].conn,
+                                      'request_round_1_move') == 'acknowledged_request':
+                    self.players_list[player_index].conn.send(str.encode(str(outputs)))
 
-                player.points = inputs[2][0]
-                player.self_past_rounds_commited = inputs[2][1]
-                player.self_current_round_commited = inputs[2][2]
-                player.in_game = inputs[2][3]
-                player.round_requirement_met = inputs[2][4]
+                player_info = str(self.players_list[player_index].conn.recv(20480), "utf-8")
+                player_info = ast.literal_eval(player_info)
+                print(f'Received player info: {player_info}')
 
-                if inputs[2][2] > current_round_commited:
-                    current_round_commited = inputs[2][2]
-
+                self.players_list[player_index].points = player_info['POINTS']
+                self.players_list[player_index].self_past_rounds_commited = player_info['PAST_COMMITED']
+                self.players_list[player_index].self_current_round_commited = player_info['CURRENT_COMMITED']
+                self.players_list[player_index].in_game = player_info['IN_GAME']
+                self.players_list[player_index].round_requirement_met = player_info['BET_MATCH']
+                if player_info['CURRENT_COMMITED'] > current_round_commited:
+                    current_round_commited = player_info['CURRENT_COMMITED']
                 iteration += 1
-
-                for player in self.players_list:  # append current round
-                    if player.points > 0:
-                        round_requirement.append(player.round_requirement_met)
-                if all(item is True for item in round_requirement):  # check to end current round
-                    round_continues = False
-        print(f'----- ----- Round 1 Ends ----- -----')
+                if player_info['MOVE'] != 'raising':
+                    for player in self.players_list:  # append current round
+                        if player.points >= 0 and player.in_game:
+                            round_requirement.append(player.round_requirement_met)
+                    if all(item is True for item in round_requirement):  # check to end current round
+                        round_continues = False
+                if round_continues is False:
+                    print(f'----- ----- ----- Round End Update ----- ----- -----')
+                    for player in self.players_list:
+                        player.self_past_rounds_commited += player.self_current_round_commited
+                        player.self_current_round_commited = 0
+                        self.communication(self.players_list[player_index].conn, 'round_end_update')
+        print(f'----- ----- ----- ----- Round 1 Ends ----- ----- ----- -----')
 
     def round_2_play(self):
-        print(f'----- ----- Round 2 Starts ----- -----')
-        self.start_round()
+        print(f'----- ----- ----- ----- Round 2 Starts ----- ----- ----- -----')
+        self.round_start_setup()
         self.board.append(self.deck.draw_card())  # add a card to the board
         iteration = 0  # start at small blind
         round_continues = True
         current_round_commited = 0
-
         while round_continues:
-            round_requirement = []
-            player_index = self.n_player % iteration
-            if player.points > 0 and player.in_game:  # check if player has all-in or folded
-                outputs = [self.players_list[player_index].hand, self.board, current_round_commited]
-                ##### add output to player client "self.players_list[player_index]" and ask for move
-                print(outputs)
+            round_requirement = [True]
+            player_index = iteration % self.n_player
+            if self.players_list[player_index].points > 0 and self.players_list[player_index].in_game:  # check if player has all-in or folded
+                print(f'----- Player {self.players_list[player_index].name} move -----')
 
-                inputs = list(['raise', 100, [1000, 150, 300, True, True]])
-                ##### add input from player client "self.players_list[player_index]"
-                print(inputs)
+                outputs = {'HAND': str(self.players_list[player_index].hand),
+                           'BOARD': str(self.board),
+                           'CURRENT_BET': str(current_round_commited)}
+                if self.communication(self.players_list[player_index].conn,
+                                      'request_round_2_move') == 'acknowledged_request':
+                    self.players_list[player_index].conn.send(str.encode(str(outputs)))
 
-                player.points = inputs[2][0]
-                player.self_past_rounds_commited = inputs[2][1]
-                player.self_current_round_commited = inputs[2][2]
-                player.in_game = inputs[2][3]
-                player.round_requirement_met = inputs[2][4]
+                player_info = str(self.players_list[player_index].conn.recv(20480), "utf-8")
+                player_info = ast.literal_eval(player_info)
+                print(f'Received player info: {player_info}')
 
-                if inputs[2][2] > current_round_commited:
-                    current_round_commited = inputs[2][2]
-
+                self.players_list[player_index].points = player_info['POINTS']
+                self.players_list[player_index].self_past_rounds_commited = player_info['PAST_COMMITED']
+                self.players_list[player_index].self_current_round_commited = player_info['CURRENT_COMMITED']
+                self.players_list[player_index].in_game = player_info['IN_GAME']
+                self.players_list[player_index].round_requirement_met = player_info['BET_MATCH']
+                if player_info['CURRENT_COMMITED'] > current_round_commited:
+                    current_round_commited = player_info['CURRENT_COMMITED']
                 iteration += 1
-
-                for player in self.players_list:  # append current round
-                    if player.points > 0:
-                        round_requirement.append(player.round_requirement_met)
-                if all(item is True for item in round_requirement):  # check to end current round
-                    round_continues = False
-        print(f'----- ----- Round 2 Ends ----- -----')
+                if player_info['MOVE'] != 'raising':
+                    for player in self.players_list:  # append current round
+                        if player.points >= 0 and player.in_game:
+                            round_requirement.append(player.round_requirement_met)
+                    if all(item is True for item in round_requirement):  # check to end current round
+                        round_continues = False
+                if round_continues is False:
+                    print(f'----- ----- ----- Round End Update ----- ----- -----')
+                    for player in self.players_list:
+                        player.self_past_rounds_commited += player.self_current_round_commited
+                        player.self_current_round_commited = 0
+                        self.communication(self.players_list[player_index].conn, 'round_end_update')
+        print(f'----- ----- ----- ----- Round 2 Ends ----- ----- ----- -----')
 
     def round_3_play(self):
-        print(f'----- ----- Round 3 Starts ----- -----')
-        self.start_round()
+        print(f'----- ----- ----- ----- Round 3 Starts ----- ----- ----- -----')
+        self.round_start_setup()
         self.board.append(self.deck.draw_card())  # add a card to the board
         iteration = 0  # start at small blind
         round_continues = True
         current_round_commited = 0
-
         while round_continues:
-            round_requirement = []
-            player_index = self.n_player % iteration
-            if player.points > 0 and player.in_game:  # check if player has all-in or folded
-                outputs = [self.players_list[player_index].hand, self.board, current_round_commited]
-                ##### add output to player client "self.players_list[player_index]" and ask for move
-                print(outputs)
+            round_requirement = [True]
+            player_index = iteration % self.n_player
+            if self.players_list[player_index].points > 0 and self.players_list[player_index].in_game:  # check if player has all-in or folded
+                print(f'----- Player {self.players_list[player_index].name} move -----')
 
-                inputs = list(['raise', 100, [1000, 150, 300, True, True]])
-                ##### add input from player client "self.players_list[player_index]"
-                print(inputs)
+                outputs = {'HAND': str(self.players_list[player_index].hand),
+                           'BOARD': str(self.board),
+                           'CURRENT_BET': str(current_round_commited)}
+                if self.communication(self.players_list[player_index].conn,
+                                      'request_round_3_move') == 'acknowledged_request':
+                    self.players_list[player_index].conn.send(str.encode(str(outputs)))
 
-                player.points = inputs[2][0]
-                player.self_past_rounds_commited = inputs[2][1]
-                player.self_current_round_commited = inputs[2][2]
-                player.in_game = inputs[2][3]
-                player.round_requirement_met = inputs[2][4]
+                player_info = str(self.players_list[player_index].conn.recv(20480), "utf-8")
+                player_info = ast.literal_eval(player_info)
+                print(f'Received player info: {player_info}')
 
-                if inputs[0] == 'raise':
-                    current_round_commited += inputs[1]
-
+                self.players_list[player_index].points = player_info['POINTS']
+                self.players_list[player_index].self_past_rounds_commited = player_info['PAST_COMMITED']
+                self.players_list[player_index].self_current_round_commited = player_info['CURRENT_COMMITED']
+                self.players_list[player_index].in_game = player_info['IN_GAME']
+                self.players_list[player_index].round_requirement_met = player_info['BET_MATCH']
+                if player_info['CURRENT_COMMITED'] > current_round_commited:
+                    current_round_commited = player_info['CURRENT_COMMITED']
                 iteration += 1
+                if player_info['MOVE'] != 'raising':
+                    for player in self.players_list:
+                        if player.points >= 0 and player.in_game:
+                            round_requirement.append(player.round_requirement_met)
+                    if all(item is True for item in round_requirement):  # check to end current round
+                        round_continues = False
+                if round_continues is False:
+                    print(f'----- ----- ----- Round End Update ----- ----- -----')
+                    for player in self.players_list:
+                        player.self_past_rounds_commited += player.self_current_round_commited
+                        player.self_current_round_commited = 0
+                        self.communication(self.players_list[player_index].conn, 'round_end_update')
+        print(f'----- ----- ----- ----- Round 3 Ends ----- ----- ----- -----')
 
-                for player in self.players_list:  # append current round
-                    if player.points > 0:
-                        round_requirement.append(player.round_requirement_met)
-                if all(item is True for item in round_requirement):  # check to end current round
-                    round_continues = False
+    def game_end_update(self):
+        print(f'----- ----- ----- ----- ----- Game End Update ----- ----- ----- ----- -----')
+        comparator = Comparator()
+        hand_dict = {}
+        commited_dict = {}
+        return_dict = {}
+        points_list = []
+        index_list = []
+        cards_list = []
+        for index in range(len(self.players_list)):
+            if self.players_list[index].in_game:
+                hand_dict.update({self.players_list[index].name: self.players_list[index].hand})
+
+                self.players_list[index].self_past_rounds_commited += self.players_list[index].self_current_rounds_commited
+                self.players_list[index].self_current_rounds_commited = 0
+                commited_dict.update({self.players_list[index].name: self.players_list[index].self_past_rounds_commited})
+
+                points_list.append(self.players_list[index].self_past_rounds_commited)
+
+                all_available_cards = self.board
+                for card in self.players_list[index].hand:
+                    all_available_cards.append(card)
+                self.players_list[index].all_available_cards = all_available_cards
+                index_list.append(index)
+                cards_list.append(all_available_cards)
+
+        rank_list = comparator.rank_cards_list(cards_list)
+        ranks = [i[1] for i in rank_list]
+        ranks_set = set(ranks)
+        for rank in np.arange(-1, -len(ranks_set), -1):
+            if sum(points_list) > 0:
+                winner_bet_total = 0
+                rank_list_temp = list(filter(None, [i[0] if i[1] == ranks[rank] else None for i in b]))
+                for player in self.players_list:
+                    if str(player.all_available_cards) in rank_list_temp:
+                        winner_bet_total += player.self_past_rounds_commited
+                winner_points_list = [min(winner_bet_total, i) for i in points_list]
+                points_list = list(np.array(points_list) - np.array(winner_points_list))
+                for player in self.players_list:
+                    if str(player.all_available_cards) in rank_list_temp:
+                        player.game_end_return = floor(sum(winner_points_list) *
+                                                       player.self_past_rounds_commited/winner_bet_total)
+                    return_dict.update({self.players_list[index].name: self.players_list[index].game_end_return})
+
+        # print(f'Remaining player hands: {hand_dict}')
+        # print(f'Player bets: {commited_dict}')
+        # print(f'Player returns: {return_dict}')
+
+        for player in self.players_list:
+            print(f'----- ----- ----- ----- Game End Player {player.name} Update ----- ----- ----- -----')
+            if self.communication(player.conn, 'game_end_hand_update') == 'acknowledged_game_end_hand_update':
+                player.conn.send(str.encode(str(hand_dict)))
+
+            if self.communication(player.conn, 'game_end_bet_update') == 'acknowledged_game_end_bet_update':
+                player.conn.send(str.encode(str(commited_dict)))
+
+            if self.communication(player.conn, 'game_end_return_update') == 'acknowledged_game_end_return_update':
+                player.conn.send(str.encode(str(return_dict)))
+
+            outputs = {'TOTAL_COMMITED': player.self_past_rounds_commited,
+                       'END_RETURN': player.game_end_return,
+                       'BOARD': self.board,
+                       'YOUR_HAND': player.hand,
+                       'YOUR_BEST_HAND': comparator.num2hand(comparator.find_best_hand(player.all_available_cards)[0])}
+            if self.communication(player.conn, 'game_end_points_update') == 'acknowledged_game_end_points_update':
+                player.conn.send(str.encode(str(outputs)))
+
+            player.points += player.game_end_return
+            self.players_list.append(self.players_list[0])
+            self.players_list.pop(0)
 
 
 # %%
-cards = [["AH", "JH", "7D", "QC", "QH", "2H", "10H"],
-         ["9H", "JH", "7D", "3C", "QH", "10H", "KH"],
-         ["QH", "4H", "7D", "QC", "QS", "2H", "10H"],
-         ["AH", "6H", "7D", "QC", "5H", "2H", "10H"],
-         ["3H", "JH", "7D", "QC", "QH", "2H", "4H"]]
-a = Comparator()
-a.rank_cards_list(cards)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# cards = [["AH", "JH", "7D", "QC", "QH", "2H", "10H"],
+#          ["9H", "JH", "7D", "3C", "QH", "10H", "KH"],
+#          ["QH", "4H", "7D", "QC", "QS", "2H", "10H"],
+#          ["AH", "6H", "7D", "QC", "5H", "2H", "10H"],
+#          ["3H", "JH", "7D", "QC", "QH", "2H", "4H"]]
+# a = Comparator()
+# b = a.rank_cards_list(cards)
+#
+#
+#
+# x = np.array([2, 4, 5, 4])
+# len(np.where(x == 4)[0])
+#
+# x[[1, 2]]
+# set([i[1] for i in b])
+#
+# list(filter(None, [i[0] if i[1] == 4 else None for i in b]))
+#
+#
+#
+# sum([2, 4, 5, 4])
+#
+#
+# list(np.array([2, 4, 5, 4]) - np.array([2, 4, 5, 4]))
 
 
 
