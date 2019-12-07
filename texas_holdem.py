@@ -5,6 +5,7 @@ from collections import defaultdict
 from itertools import combinations
 import operator
 import numpy as np
+import pandas as pd
 from math import floor
 
 
@@ -112,8 +113,8 @@ class Player:
     def calling(self, current_round_commited):
         if self.points >= current_round_commited - self.self_current_round_commited:
             print(f'You called {current_round_commited - self.self_current_round_commited} points.')
-            self.self_current_round_commited = current_round_commited - self.self_current_round_commited
             self.points -= (current_round_commited - self.self_current_round_commited)
+            self.self_current_round_commited = current_round_commited
             self.round_requirement_met = True
             return {'MOVE': 'call',
                     'POINTS': self.points,
@@ -162,7 +163,7 @@ class Player:
     def ask_for_move(self, current_round_commited):
         print(f'You have commited {self.self_past_rounds_commited + self.self_current_round_commited} points this game.')
         if current_round_commited == self.self_current_round_commited:
-            print(f'You have match the bet this round.')
+            print(f'You have matched the bet this round.')
         else:
             print(f'You need to commit additional {current_round_commited - self.self_current_round_commited} points.')
         self.exist_error = True
@@ -421,7 +422,7 @@ class GameEnv:
 
     """
 
-    def __init__(self, players_list, small_blind_points=1, big_blind_points=2):
+    def __init__(self, players_list, small_blind_points=1, big_blind_points=2, recording=True):
         self.players_list = players_list
         self.small_blind_points = small_blind_points
         self.big_blind_points = big_blind_points
@@ -429,6 +430,8 @@ class GameEnv:
         self.n_player = len(self.players_list)
         self.deck = None
         self.board = None
+
+        self.record_out = pd.DataFrame()
 
     @staticmethod
     def communication(conn, cmd):
@@ -456,6 +459,7 @@ class GameEnv:
         self.players_list[0].self_current_round_commited = self.small_blind_points
         if self.communication(self.players_list[0].conn, 'sending_small_blind') == 'acknowledged_small_blind':
             self.players_list[0].conn.send(str.encode(str(self.small_blind_points)))
+
         self.players_list[1].points -= self.big_blind_points  # big blind player
         self.players_list[1].self_current_round_commited = self.big_blind_points
         if self.communication(self.players_list[1].conn, 'sending_big_blind') == 'acknowledged_big_blind':
@@ -490,13 +494,15 @@ class GameEnv:
         self.apply_blinds()
         self.initialize_player_cards()
 
-    def round_start_setup(self):  # set all players' round reqirement to not met
+    def round_start_setup(self, round_0=False):  # set all players' round reqirement to not met
         for player in self.players_list:
             player.round_requirement_met = False
+            if player.name == self.players_list[1].name and round_0:
+                player.round_requirement_met = True
 
     def round_0_play(self):  # need to check number of players still in tournament
         print(f'----- ----- ----- ----- Round 0 Starts ----- ----- ----- -----')
-        self.round_start_setup()
+        self.round_start_setup(round_0=True)
         iteration = 2  # skipping small and big blind
         round_continues = True
         current_round_commited = 2
@@ -529,13 +535,14 @@ class GameEnv:
                         if player.points >= 0 and player.in_game:
                             round_requirement.append(player.round_requirement_met)
                     if all(item is True for item in round_requirement):  # check to end current round
-                        round_continues = False
-                if round_continues is False:
-                    print(f'----- ----- ----- Round End Update ----- ----- -----')
-                    for player in self.players_list:
-                        player.self_past_rounds_commited += player.self_current_round_commited
-                        player.self_current_round_commited = 0
-                        self.communication(self.players_list[player_index].conn, 'round_end_update')
+                        if current_round_commited == 2:
+                            round_continues = False
+            if round_continues is False:
+                for player in self.players_list:
+                    print(f'----- ----- ----- Player {self.players_list[player_index].name} Round End Update ----- ----- -----')
+                    player.self_past_rounds_commited += player.self_current_round_commited
+                    player.self_current_round_commited = 0
+                    self.communication(player.conn, 'round_end_update')
         print(f'----- ----- ----- ----- Round 0 Ends ----- ----- ----- -----')
 
     def round_1_play(self):
@@ -774,8 +781,12 @@ class GameEnv:
 #
 #
 # list(np.array([2, 4, 5, 4]) - np.array([2, 4, 5, 4]))
-
-
+#
+# import socket
+# hostname = socket.gethostname()
+# IPAddr = socket.gethostbyname(hostname)
+# print("Your Computer Name is:" + hostname)
+# print("Your Computer IP Address is:" + IPAddr)
 
 
 
