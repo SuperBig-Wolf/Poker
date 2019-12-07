@@ -94,7 +94,12 @@ class Player:
         print(f'You have folded.')
         self.round_requirement_met = True
         self.in_game = False
-        return {'MOVE': 'fold', 'PLAYER_INFO': self.get_info()}
+        return {'MOVE': 'fold',
+                'POINTS': self.points,
+                'PAST_COMMITED': self.self_past_rounds_commited,
+                'CURRENT_COMMITED': self.self_current_round_commited,
+                'IN_GAME': self.in_game,
+                'BET_MATCH': self.round_requirement_met}
 
     def checking(self, current_round_commited):
         if self.self_current_round_commited == current_round_commited:
@@ -128,8 +133,8 @@ class Player:
 
     def raising(self, current_round_commited, raise_amount):
         if current_round_commited - self.self_current_round_commited + raise_amount <= self.points:
+            self.points -= current_round_commited - self.self_current_round_commited + raise_amount
             self.self_current_round_commited = current_round_commited + raise_amount
-            self.points -= (current_round_commited - self.self_current_round_commited) + raise_amount
             print(f'You raised {raise_amount} points in addition to the previous bet of {current_round_commited} points.')
             self.round_requirement_met = True
             return {'MOVE': 'raising',
