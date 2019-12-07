@@ -709,7 +709,7 @@ class GameEnv:
         for rank in np.arange(-1, -len(ranks_set), -1):
             if sum(points_list) > 0:
                 winner_bet_total = 0
-                rank_list_temp = list(filter(None, [i[0] if i[1] == ranks[rank] else None for i in b]))
+                rank_list_temp = list(filter(None, [i[0] if i[1] == ranks[rank] else None for i in rank_list]))
                 for player in self.players_list:
                     if str(player.all_available_cards) in rank_list_temp:
                         winner_bet_total += player.self_past_rounds_commited

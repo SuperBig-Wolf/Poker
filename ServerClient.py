@@ -209,12 +209,13 @@ def start_game():
 
     ENV.initial_points(initial_points=1000)
 
-    ENV.game_start_setup()
-    ENV.round_0_play()
-    ENV.round_1_play()
-    ENV.round_2_play()
-    ENV.round_3_play()
-
+    for i in range(2):
+        ENV.game_start_setup()
+        ENV.round_0_play()
+        ENV.round_1_play()
+        ENV.round_2_play()
+        ENV.round_3_play()
+        ENV.game_end_update()
 
 # %%
 # display all current active connections with client
