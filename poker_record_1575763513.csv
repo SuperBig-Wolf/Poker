@@ -1,0 +1,6 @@
+,player,hand,board,move,amount,past_bet,current_bet,in_game,best_hand
+0,Yike,"[10H, 6H]",[],call,0,1010132,2,True,Initial Hand
+1,Zehan,"[7S, AD]",[],raising,1000,0,1002,True,Initial Hand
+2,Deeksha,"[5C, AC]",[],fold,0,2000041,0,False,Initial Hand
+3,Shreyashi,"[QD, JS]",[],fold,0,10121,0,False,Initial Hand
+4,Yike,"[10H, 6H]",[],fold,0,1010134,0,False,Initial Hand

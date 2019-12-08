@@ -1,0 +1,5 @@
+,player,hand,board,move,amount,past_bet,current_bet,in_game,best_hand
+0,Zehan,"[5S, 8S]",[],fold,0,0,0,False,Initial Hand
+1,Shreyashi,"[10S, 4H]",[],fold,0,12020194,0,False,Initial Hand
+2,Deeksha,"[QS, AD]",[],raising,5,11010445,7,True,Initial Hand
+3,Yike,"[8H, 3S]",[],fold,0,22020213,0,False,Initial Hand

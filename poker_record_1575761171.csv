@@ -1,0 +1,4 @@
+,player,hand,board,move,amount,past_bet,current_bet,in_game,best_hand
+0,Zehan,"[7D, 6S]",[],fold,0,0,0,False,Initial Hand
+1,Shreyashi,"[2C, 5S]",[],fold,0,21,0,False,Initial Hand
+2,Deeksha,"[4D, 2D]",[],fold,0,32,0,False,Initial Hand

@@ -1,0 +1,4 @@
+,player,hand,board,move,amount,past_bet,current_bet,in_game,best_hand
+0,Shreyashi,"[8C, 3D]",[],fold,0,0,0,False,Initial Hand
+1,Yike,"[3S, 7S]",[],fold,0,1,0,False,Initial Hand
+2,Zehan,"[3C, 9D]",[],fold,0,1,0,False,Initial Hand

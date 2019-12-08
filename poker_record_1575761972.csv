@@ -1,0 +1,10 @@
+,player,hand,board,move,amount,past_bet,current_bet,in_game,best_hand
+0,Shreyashi,"[5S, 4S]",[],call,0,71,2,True,Initial Hand
+1,Deeksha,"[6H, 8C]",[],call,0,322,2,True,Initial Hand
+2,Yike,"[QH, KD]",[],raising,5,91,7,True,Initial Hand
+3,Zehan,"[6C, 6D]",[],raising,100,0,107,True,Initial Hand
+4,Shreyashi,"[5S, 4S]",[],fold,0,73,0,False,Initial Hand
+5,Deeksha,"[6H, 8C]",[],call,0,322,107,True,Initial Hand
+6,Yike,"[QH, KD]",[],fold,0,98,0,False,Initial Hand
+7,Zehan,"[6C, 6D]","[AD, 7C, 2H]",call,0,107,0,True,one pair
+8,Deeksha,"[6H, 8C]","[AD, 7C, 2H]",fold,0,429,0,False,high card

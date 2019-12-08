@@ -1,0 +1,4 @@
+,player,hand,board,move,amount,past_bet,current_bet,in_game,best_hand
+0,Deeksha,"[3D, 4C]",[],fold,0,2000033,0,False,Initial Hand
+1,Shreyashi,"[3S, 4H]",[],fold,0,10119,0,False,Initial Hand
+2,Yike,"[JD, 3C]",[],fold,0,1010125,0,False,Initial Hand

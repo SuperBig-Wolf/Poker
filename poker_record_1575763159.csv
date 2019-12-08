@@ -1,0 +1,6 @@
+,player,hand,board,move,amount,past_bet,current_bet,in_game,best_hand
+0,Shreyashi,"[QC, 4S]",[],fold,0,10,0,False,Initial Hand
+1,Yike,"[7S, 9D]",[],call,0,6,2,True,Initial Hand
+2,Zehan,"[5C, 4D]",[],fold,0,1,0,False,Initial Hand
+3,Deeksha,"[KD, JD]","[2S, 3S, AC]",raising,5,15,5,True,high card
+4,Yike,"[7S, 9D]","[2S, 3S, AC]",fold,0,8,0,False,high card

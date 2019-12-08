@@ -1,0 +1,16 @@
+,player,hand,board,move,amount,past_bet,current_bet,in_game,best_hand
+0,Shreyashi,"[6C, AC]",[],raising,10000,2000187,10002,True,Initial Hand
+1,Deeksha,"[5C, 7S]",[],call,0,1000440,10002,True,Initial Hand
+2,Yike,"[7H, 10H]",[],call,0,2000205,10002,True,Initial Hand
+3,Zehan,"[10S, 10D]",[],raising,1,0,10003,True,Initial Hand
+4,Shreyashi,"[6C, AC]",[],call,0,2000187,10003,True,Initial Hand
+5,Deeksha,"[5C, 7S]",[],call,0,1000440,10003,True,Initial Hand
+6,Yike,"[7H, 10H]",[],fold,0,2010207,0,False,Initial Hand
+7,Zehan,"[10S, 10D]","[7C, 2C, 9C]",call,0,10003,0,True,one pair
+8,Shreyashi,"[6C, AC]","[7C, 2C, 9C]",check,0,2010190,0,True,flush
+9,Deeksha,"[5C, 7S]","[7C, 2C, 9C]",fold,0,1010443,0,False,one pair
+10,Zehan,"[10S, 10D]","[7C, 2C, 9C, JS]",call,0,10003,0,True,one pair
+11,Shreyashi,"[6C, AC]","[7C, 2C, 9C, JS]",raising,10000,2010190,10000,True,flush
+12,Zehan,"[10S, 10D]","[7C, 2C, 9C, JS]",call,0,10003,10000,True,one pair
+13,Zehan,"[10S, 10D]","[7C, 2C, 9C, JS, 4D]",call,0,20003,0,True,one pair
+14,Shreyashi,"[6C, AC]","[7C, 2C, 9C, JS, 4D]",check,0,2020190,0,True,flush

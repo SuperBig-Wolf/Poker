@@ -1,0 +1,4 @@
+,player,hand,board,move,amount,past_bet,current_bet,in_game,best_hand
+0,Shreyashi,"[2S, 9C]",[],fold,0,2000184,0,False,Initial Hand
+1,Deeksha,"[AS, 4C]",[],fold,0,1000437,0,False,Initial Hand
+2,Yike,"[KS, 3C]",[],fold,0,2000203,0,False,Initial Hand
