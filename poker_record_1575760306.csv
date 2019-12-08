@@ -1,0 +1,4 @@
+,player,hand,board,move,amount,past_bet,current_bet,in_game,best_hand
+0,Deeksha,"[3D, JD]",[],fold,0,175,0,False,Initial Hand
+1,Yike,"[QH, 5S]",[],fold,0,95,0,False,Initial Hand
+2,Shreyashi,"[JH, 6D]",[],fold,0,54,0,False,Initial Hand

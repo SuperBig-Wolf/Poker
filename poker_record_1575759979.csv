@@ -1,0 +1,4 @@
+,player,hand,board,move,amount,past_bet,current_bet,in_game,best_hand
+0,Deeksha,"[KC, 9H]",[],fold,0,160,0,False,Initial Hand
+1,Yike,"[6C, 4H]",[],fold,0,68,0,False,Initial Hand
+2,Shreyashi,"[9D, 3C]",[],fold,0,45,0,False,Initial Hand

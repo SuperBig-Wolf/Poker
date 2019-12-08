@@ -1,0 +1,6 @@
+,player,hand,board,move,amount,past_bet,current_bet,in_game,best_hand
+0,Zehan,"[QC, 8H]",[],call,0,325,2,True,Initial Hand
+1,Deeksha,"[6H, 3C]",[],fold,0,175,0,False,Initial Hand
+2,Yike,"[4S, 10D]",[],fold,0,95,0,False,Initial Hand
+3,Shreyashi,"[KS, QH]","[AS, 3H, 2H]",fold,0,53,0,False,high card
+4,Zehan,"[QC, 8H]","[AS, 3H, 2H]",fold,0,327,0,False,high card

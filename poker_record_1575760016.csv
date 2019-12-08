@@ -1,0 +1,4 @@
+,player,hand,board,move,amount,past_bet,current_bet,in_game,best_hand
+0,Shreyashi,"[KS, 6D]",[],fold,0,45,0,False,Initial Hand
+1,Zehan,"[3D, 9C]",[],fold,0,309,0,False,Initial Hand
+2,Deeksha,"[AC, 6H]",[],fold,0,163,0,False,Initial Hand

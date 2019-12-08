@@ -1,0 +1,4 @@
+,player,hand,board,move,amount,past_bet,current_bet,in_game,best_hand
+0,Zehan,"[4H, 9D]",[],fold,0,358,0,False,Initial Hand
+1,Deeksha,"[4D, 3H]",[],fold,0,204,0,False,Initial Hand
+2,Yike,"[8H, 5S]",[],fold,0,98,0,False,Initial Hand
